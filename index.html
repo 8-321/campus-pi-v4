@@ -118,7 +118,7 @@ header{
 .hero-cap b{font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.42;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hero-dots{display:flex;gap:6px;padding:0 15px 13px}
-.dot{width:20px;height:3px;border-radius:2px;background:var(--ln);transition:background .2s,width .2s}
+.dot{width:20px;height:3px;border-radius:2px;background:#D6D6D6;transition:background .2s,width .2s}
 .dot.on{background:var(--ink);width:28px}
 
 /* ============ 列表头 ============ */
@@ -329,6 +329,7 @@ textarea.inp{min-height:88px;resize:vertical;line-height:1.6}
 .cm-in{display:flex;gap:8px;margin-top:12px}
 .cm-in .inp{flex:1;min-height:40px;font-size:13px}
 .cm-in button{height:40px;padding:0 14px;border-radius:var(--r-btn);background:var(--ink);color:#fff;font-size:13px;font-weight:600}
+.credit{font-size:11px;color:var(--mu);padding:9px 0 0;line-height:1.5}
 
 /* 我的 / 接单 */
 .prof{border:1px solid var(--ln);border-radius:var(--r-card);padding:16px;display:flex;gap:12px;align-items:center}
@@ -458,6 +459,11 @@ textarea.inp{min-height:88px;resize:vertical;line-height:1.6}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
+/* 运行期错误收集：验收脚本读 window.__errs，做到「控制台 0 报错」可核对 */
+window.__errs = [];
+window.addEventListener('error', e => window.__errs.push('error: ' + e.message));
+window.addEventListener('unhandledrejection', e => window.__errs.push('reject: ' + (e.reason && e.reason.message || e.reason)));
+
 /* ============ 数据层 ============ */
 const KEY = 'pi.v4';
 const TERMS = '使用即表示同意：所有内容由用户自发发布，平台不介入交易；认证仅为格式校验（演示版）。';
@@ -471,6 +477,19 @@ const CATS = ['全部', '二手书', '竞赛', '课程', '闲置', '搭子', '�
 /* 分类 → 配图：发布新内容时按分类自动取图，不是所有卡同一张 */
 const PHOTO = { '二手书': 'img/p1.jpg', '竞赛': 'img/p2.jpg', '课程': 'img/p3.jpg', '闲置': 'img/p5.jpg', '搭子': 'img/p6.jpg', '求助': 'img/p7.jpg' };
 const imgFor = cat => PHOTO[cat] || 'img/p4.jpg';
+
+/* 图源署名：CC BY / CC BY-SA 的硬性要求，删了就是侵权（完整信息见 img/credit.json） */
+const CREDIT = {
+  'img/p1.jpg': 'Guilhem Vellut · CC BY 2.0',
+  'img/p2.jpg': 'Tony Alter · CC BY 2.0',
+  'img/p3.jpg': 'Tookapic · CC0',
+  'img/p4.jpg': 'MNHS Heritage Preservation · CC BY 2.0',
+  'img/p5.jpg': 'Yinan Chen · Public Domain',
+  'img/p6.jpg': 'Habila Sani Mazawaje · CC BY-SA 4.0',
+  'img/p7.jpg': 'Kindohm · CC BY-SA 4.0',
+  'img/p8.jpg': 'Cherie Cullen · Public Domain'
+};
+const creditFor = src => CREDIT[src] || 'Wikimedia Commons';
 
 /* 自绘 24 网格线性图标，stroke-width 1.5，禁止 emoji */
 const I = {
@@ -686,16 +705,25 @@ function openDetail(id, focus) {
         <div><dt>留言</dt><dd>${(p.cm || []).length} 条</dd></div>
       </dl>
       <div class="note"><b>安全建议</b><br>线下当面交易，白天优先；不见面不转账，不扫码付款，不点陌生人链接。</div>
+      <div class="credit">图：${esc(creditFor(p.img || imgFor(p.cat)))}（Wikimedia Commons）</div>
       <div class="cm-h">留言<span>${(p.cm || []).length} 条</span></div>
       <div id="cmList">${(p.cm || []).length ? (p.cm).map(c => `
         <div class="cm"><span class="av">${esc(initial(c.by))}</span>
           <div class="c"><b>${esc(c.by)}</b><time> · ${esc(c.at)}</time><p>${esc(c.txt)}</p></div></div>`).join('')
       : '<div class="hint">还没有留言，占个沙发。</div>'}</div>
+      <div class="cm-in">
+        <input class="inp" id="cmInput" maxlength="80" placeholder="说两句，别吵架" autocomplete="off">
+        <button type="button" id="cmSend">发送</button>
+      </div>
+      <div style="height:6px"></div>
     </div>`,
     `<button type="button" class="btn btn-ghost" id="reportBtn">${I.flag}举报</button>
      <button type="button" class="btn btn-primary" id="takeBtn">接单</button>`);
-  $('#takeBtn').onclick = () => toast('接单流程在第 4 步接上');
-  $('#reportBtn').onclick = () => toast('举报流程在第 4 步接上');
+  $('#takeBtn').onclick = () => takeOrder(p.id);
+  $('#reportBtn').onclick = () => openReport(p.id);
+  const send = () => addComment(p.id);
+  if ($('#cmSend')) $('#cmSend').onclick = send;
+  if ($('#cmInput')) $('#cmInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
   if (focus === 'cm') setTimeout(() => { const el = $('#cmList'); if (el) el.scrollIntoView({ block: 'center' }); }, 260);
 }
 
@@ -755,7 +783,7 @@ function renderMine() {
       数据只存在这台设备的浏览器里（localStorage），换设备或清缓存就没了，别当云备份。<br>
       配图来自 CC0 / CC-BY 图库，出处见 img/credit.json。
     </p>`;
-  $('#verifyBtn').onclick = () => toast('认证流程在第 4 步接上');
+  $('#verifyBtn').onclick = () => openVerify();
 }
 function setTab(tab) {
   State.tab = tab;
@@ -775,6 +803,272 @@ $('#q').addEventListener('input', e => {
   qT = setTimeout(() => { State.q = e.target.value; renderList(); }, 120);
 });
 
+/* ================= 第 4 步：真实交互 ================= */
+/* 风险词：命中即拦；否定语境（不用预付 / 不转账 / 别扫码）不算命中 */
+const RISK = ['预付', '定金', '转账', '扫码付', '扫码', '二维码', '付款码', '加微信', '加v', '加V', '先付款', '押金', '红包', '链接支付', '代付', '刷单', '返利', '私聊付'];
+const NEG = /(不|没|无|别|勿|免|拒|切勿|谨防|警惕|防止|拒绝)/;
+
+function riskHits(text) {
+  const t = String(text || '');
+  const hits = [];
+  RISK.forEach(w => {
+    let i = t.indexOf(w);
+    while (i !== -1) {
+      const before = t.slice(Math.max(0, i - 12), i);
+      if (!NEG.test(before)) { hits.push(w); break; }
+      i = t.indexOf(w, i + w.length);
+    }
+  });
+  return hits;
+}
+
+/* ---- 表单小工具 ---- */
+function setErr(inputSel, msgSel, text) {
+  const i = $(inputSel), m = $(msgSel);
+  if (m) { m.textContent = text || ''; m.classList.toggle('on', !!text); }
+  if (i) i.classList.toggle('err', !!text);
+}
+const nowStr = () => '刚刚';
+const rnd = n => {
+  const A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let s = '';
+  for (let i = 0; i < n; i++) s += A[Math.floor(Math.random() * A.length)];
+  return s;
+};
+
+/* ---- 发布 ---- */
+let draft = { cat: '二手书' };
+function openPublish() {
+  draft = { cat: '二手书' };
+  const cats = CATS.filter(c => c !== '全部');
+  openSheet('发布信息', `
+    <form id="pubForm" novalidate>
+      <div class="field">
+        <label>分类<span class="rq">*</span></label>
+        <div class="seg" id="pubCat">${cats.map(c => `<button type="button" data-c="${esc(c)}" aria-pressed="${c === draft.cat}">${esc(c)}</button>`).join('')}</div>
+        <div class="msg" id="e-cat"></div>
+      </div>
+      <div class="field">
+        <label for="f-title">标题<span class="rq">*</span></label>
+        <input class="inp" id="f-title" maxlength="40" placeholder="一句话说清是什么，例如「高数 A 上 期末整理」" autocomplete="off">
+        <div class="msg" id="e-title"></div>
+      </div>
+      <div class="field">
+        <label for="f-txt">正文<span class="rq">*</span></label>
+        <textarea class="inp" id="f-txt" maxlength="300" placeholder="成色、时间、能不能小刀，写清楚少扯皮"></textarea>
+        <div class="msg" id="e-txt"></div>
+      </div>
+      <div class="field">
+        <div class="row2">
+          <div>
+            <label for="f-price">价格（元，0 或空 = 免费）</label>
+            <input class="inp" id="f-price" inputmode="numeric" placeholder="0" autocomplete="off">
+            <div class="msg" id="e-price"></div>
+          </div>
+          <div>
+            <label for="f-place">地点<span class="rq">*</span></label>
+            <input class="inp" id="f-place" placeholder="如图书馆南门" autocomplete="off">
+            <div class="msg" id="e-place"></div>
+          </div>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="f-anon"> 匿名发布（列表里署名为「匿名」）</label>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="f-promise">
+        <span>我承诺：信息真实、物品自有，不含预付 / 定金 / 诱导转账内容<span class="rq">*</span></span></label>
+      <div class="msg" id="e-promise"></div>
+      <p class="hint">只写进这台设备的浏览器（localStorage），不上传、不采集。换设备或清缓存就没了。</p>
+    </form>`,
+    `<button type="button" class="btn btn-ghost" id="pubCancel">取消</button>
+     <button type="button" class="btn btn-primary" id="pubSubmit">发布</button>`);
+
+  $$('#pubCat button').forEach(b => b.onclick = () => {
+    draft.cat = b.dataset.c; $$('#pubCat button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  $('#pubCancel').onclick = closeSheet;
+  $('#pubSubmit').onclick = submitPublish;
+}
+
+function submitPublish() {
+  const title = $('#f-title').value.trim();
+  const txt = $('#f-txt').value.trim();
+  const place = $('#f-place').value.trim();
+  const priceRaw = $('#f-price').value.trim();
+  const promise = $('#f-promise').checked;
+  let bad = false;
+
+  setErr('#f-title', '#e-title', title.length < 4 ? '标题至少 4 个字' : '');
+  if (title.length < 4) bad = true;
+  setErr('#f-txt', '#e-txt', txt.length < 10 ? '正文至少 10 个字，写清楚点' : '');
+  if (txt.length < 10) bad = true;
+  setErr('#f-place', '#e-place', place.length < 2 ? '写个能碰头的地点' : '');
+  if (place.length < 2) bad = true;
+  const price = priceRaw === '' ? 0 : Number(priceRaw);
+  const priceBad = priceRaw !== '' && (!Number.isFinite(price) || price < 0 || price > 99999);
+  setErr('#f-price', '#e-price', priceBad ? '填数字，0 表示免费' : '');
+  if (priceBad) bad = true;
+
+  const hits = riskHits(title + ' ' + txt);
+  if (hits.length) {
+    setErr('#f-txt', '#e-txt', `命中风险词「${hits[0]}」，先删掉再发。如果是在提醒别人别这么做，写成「不用${hits[0]}」这类否定句就不拦。`);
+    bad = true;
+  }
+  setErr(null, '#e-promise', promise ? '' : '要勾选承诺才能发布');
+  if (!promise) bad = true;
+  if (bad) { console.log('[pi] publish blocked'); return; }
+
+  const anon = $('#f-anon').checked;
+  const post = {
+    id: 'u' + Date.now().toString(36),
+    cat: draft.cat, title, txt,
+    price: Number(price) || 0,
+    place,
+    au: anon ? '匿' : initial(State.me.name || '我'),
+    verified: !!State.me.verified,
+    time: nowStr(),
+    likes: 0,
+    cm: [],
+    img: imgFor(draft.cat),
+    by: anon ? '匿名' : (State.me.verified ? State.me.name : '我')
+  };
+  State.posts.unshift(post);
+  persist();
+  console.log('[pi] published', post.id, post.cat);
+  closeSheet();
+  State.cat = '全部'; State.q = ''; $('#q').value = '';
+  renderStrip(); renderHero(); renderList();
+  setTab('home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('已发布 · 已置顶，配图取自「' + post.cat + '」');
+}
+
+/* ---- 在校生认证 ---- */
+function openVerify(pendingTakeId) {
+  const me = State.me;
+  openSheet(me.verified ? '在校生认证（演示版）' : '在校生认证', `
+    <form id="vf" novalidate>
+      <div class="field">
+        <label for="v-name">姓名<span class="rq">*</span></label>
+        <input class="inp" id="v-name" maxlength="12" placeholder="两个字以上" value="${esc(me.name || '')}" autocomplete="off">
+        <div class="msg" id="e-vname"></div>
+      </div>
+      <div class="field">
+        <label for="v-sid">学号<span class="rq">*</span></label>
+        <input class="inp" id="v-sid" inputmode="numeric" maxlength="12" placeholder="8–12 位数字" value="${esc(me.sid || '')}" autocomplete="off">
+        <div class="msg" id="e-vsid"></div>
+      </div>
+      <div class="field">
+        <label for="v-card">校园卡后四位<span class="rq">*</span></label>
+        <input class="inp" id="v-card" inputmode="numeric" maxlength="4" placeholder="4 位数字" value="${esc(me.card4 || '')}" autocomplete="off">
+        <div class="msg" id="e-vcard"></div>
+      </div>
+      <div class="note"><b>只做格式校验（演示版）</b><br>不联网核验、不上传。这三项只存在你自己的浏览器里，用来演示「认证后才能接单」这个流程。</div>
+    </form>`,
+    `<button type="button" class="btn btn-ghost" id="vCancel">取消</button>
+     <button type="button" class="btn btn-primary" id="vSubmit">${me.verified ? '更新认证' : '提交认证'}</button>`);
+  $('#vCancel').onclick = closeSheet;
+  $('#vSubmit').onclick = () => {
+    const name = $('#v-name').value.trim();
+    const sid = $('#v-sid').value.trim();
+    const card = $('#v-card').value.trim();
+    let bad = false;
+    setErr('#v-name', '#e-vname', name.length >= 2 ? '' : '姓名至少 2 个字');
+    if (name.length < 2) bad = true;
+    const sidOk = /^\d{8,12}$/.test(sid);
+    setErr('#v-sid', '#e-vsid', sidOk ? '' : '学号要 8–12 位数字');
+    if (!sidOk) bad = true;
+    const cardOk = /^\d{4}$/.test(card);
+    setErr('#v-card', '#e-vcard', cardOk ? '' : '后四位要 4 位数字');
+    if (!cardOk) bad = true;
+    if (bad) { console.log('[pi] verify rejected'); return; }
+
+    State.me = { name, sid, card4: card, verified: true, at: nowStr() };
+    save('me', State.me);
+    syncAuth();
+    console.log('[pi] verified', name);
+    closeSheet();
+    toast('认证通过（演示版格式校验）');
+    if (State.tab === 'mine') renderMine();
+    if (pendingTakeId) setTimeout(() => takeOrder(pendingTakeId), 180);
+  };
+}
+
+/* ---- 接单 ---- */
+function takeOrder(id) {
+  const p = State.posts.find(x => x.id === id);
+  if (!p) return;
+  if (!State.me.verified) {
+    closeSheet();
+    toast('先做在校生认证，再接单');
+    setTimeout(() => openVerify(id), 160);
+    return;
+  }
+  const code = 'XY-' + rnd(4);
+  const order = { code, pid: p.id, title: p.title, price: p.price, place: p.place, at: nowStr() };
+  State.orders.unshift(order);
+  save('orders', State.orders);
+  console.log('[pi] order', code, p.id);
+  openSheet('接单成功', `
+    <div class="suc">
+      <div class="ic">${I.ok}</div>
+      <h3>接单成功</h3>
+      <p>把这串面交码给对方看，当面核对物品后再交易。</p>
+      <div class="code" id="succCode">${esc(code)}</div>
+      <div class="tip">面交码只在本机保存，换设备就没了。<br>别把这串码发给陌生人，也别在任何页面填它。</div>
+    </div>`,
+    `<button type="button" class="btn btn-primary" id="seeOrders">查看我的接单</button>`);
+  $('#seeOrders').onclick = () => { closeSheet(); setTab('orders'); };
+  if (State.tab === 'orders') renderOrders();
+}
+
+/* ---- 举报 ---- */
+const REASONS = ['虚假信息', '要求预付', '人身攻击', '垃圾广告'];
+function openReport(id) {
+  const p = State.posts.find(x => x.id === id);
+  if (!p) return;
+  openSheet('举报', `
+    <div class="field">
+      <label>举报理由</label>
+      <div class="seg" id="rpCat">${REASONS.map((r, i) => `<button type="button" data-r="${esc(r)}" aria-pressed="${i === 0}">${esc(r)}</button>`).join('')}</div>
+    </div>
+    <div class="field">
+      <label for="rpTxt">补充说明（可选）</label>
+      <textarea class="inp" id="rpTxt" maxlength="120" placeholder="写清楚发生了什么"></textarea>
+    </div>
+    <div class="note">举报只记录在这台设备上（demo 没有后端），不会真的通知平台。真实上线需要审核后台。</div>`,
+    `<button type="button" class="btn btn-ghost" id="rpCancel">取消</button>
+     <button type="button" class="btn btn-primary" id="rpSubmit">提交举报</button>`);
+  let reason = REASONS[0];
+  $$('#rpCat button').forEach(b => b.onclick = () => {
+    reason = b.dataset.r; $$('#rpCat button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  $('#rpCancel').onclick = closeSheet;
+  $('#rpSubmit').onclick = () => {
+    State.reports.unshift({ pid: p.id, title: p.title, reason, txt: $('#rpTxt').value.trim(), at: nowStr() });
+    save('reports', State.reports);
+    console.log('[pi] report', p.id, reason);
+    closeSheet();
+    toast('已记录举报：' + reason);
+    if (State.tab === 'mine') renderMine();
+  };
+}
+
+/* ---- 留言 ---- */
+function addComment(id) {
+  const p = State.posts.find(x => x.id === id);
+  if (!p) return;
+  const inp = $('#cmInput');
+  const txt = (inp.value || '').trim();
+  if (txt.length < 2) { toast('留言至少 2 个字'); inp.focus(); return; }
+  const hits = riskHits(txt);
+  if (hits.length) { toast('留言里有「' + hits[0] + '」，先删掉'); return; }
+  p.cm = p.cm || [];
+  p.cm.push({ by: State.me.verified ? State.me.name : '我', txt, at: nowStr() });
+  persist();
+  console.log('[pi] comment', p.id, p.cm.length);
+  openDetail(p.id, 'cm');
+  toast('留言已发出');
+}
+
 /* ============ 启动 ============ */
 function syncAuth() {
   const me = State.me;
@@ -790,8 +1084,8 @@ function boot() {
   syncAuth();
   syncHdh();
   window.addEventListener('resize', syncHdh);
-  $('#pubBtn').onclick = () => toast('发布面板在第 4 步接上');
-  $('#authBtn').onclick = () => toast('认证面板在第 4 步接上');
+  $('#pubBtn').onclick = openPublish;
+  $('#authBtn').onclick = () => openVerify();
   window.__pi = State;
 }
 boot();
