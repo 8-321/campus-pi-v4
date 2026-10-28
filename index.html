@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>校园π · 校园信息聚合</title>
+<meta name="description" content="校园二手书 / 竞赛组队 / 课程笔记 / 闲置 / 搭子 / 求助，一个页面全搞定。数据只存在你的浏览器里。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23121212'/%3E%3Ctext x='16' y='23' font-size='20' font-family='Georgia,serif' fill='%23fff' text-anchor='middle'%3E%CF%80%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#fff; --ink:#121212; --tx:#5A5A5A; --mu:#9A9A9A;
+    --ln:#E7E7E7; --ln2:#F2F2F2;
+    --pad:20px; --maxw:1080px; --hdh:56px;
+    --r-card:12px; --r-btn:9px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  input,textarea,select{font:inherit;color:inherit;background:none;border:1px solid var(--ln);border-radius:8px}
+  img{display:block;max-width:100%}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad)}
+
+  /* 骨架期只做结构，不做美术 */
+  header{border-bottom:1px solid #000}
+  .hd-in{display:flex;gap:10px;align-items:center;min-height:var(--hdh)}
+  .brand{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+  .brand b{font-size:17px}
+  .brand em{font-style:normal;font-size:11px;color:#888}
+  .search{flex:1;display:flex;align-items:center;gap:6px;border:1px solid #bbb;padding:4px 8px;min-width:0}
+  .search input{flex:1;border:0;min-width:0;padding:4px 0}
+  .search input:focus{outline:none}
+  .authchip{border:1px solid #bbb;padding:4px 8px;white-space:nowrap;font-size:12px}
+
+  .strip{border-bottom:1px solid #ddd;padding:8px 0}
+  .strip-track{display:flex;gap:8px;overflow-x:auto}
+  .chip{border:1px solid #bbb;padding:4px 12px;white-space:nowrap}
+  .chip[aria-selected="true"]{background:#000;color:#fff}
+
+  .hero{position:relative;border:1px solid #000;margin-top:12px;overflow:hidden}
+  .hero-slide{position:absolute;inset:0;display:none}
+  .hero-slide.on{display:block;position:relative}
+  .hero-slide img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;background:#eee}
+  .hero-cap{padding:10px}
+  .hero-cap b{display:block}
+  .hero-cap span{font-size:12px;color:#777}
+  .dots{display:flex;gap:6px;padding:8px 10px}
+  .dot{width:22px;height:3px;background:#ddd}
+  .dot.on{background:#000}
+
+  .listhead{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 10px}
+  .listhead h2{margin:0;font-size:15px}
+  .listhead span{font-size:12px;color:#888}
+
+  .cards{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1000px){.cards{grid-template-columns:repeat(3,1fr)}}
+
+  .card{border:1px solid #ccc;display:flex;flex-direction:column}
+  .card .thumb{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;background:#eee}
+  .card .body{padding:10px;display:flex;flex-direction:column;flex:1}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card p{margin:0 0 8px;font-size:12px;color:#666}
+  .card .author{margin-top:auto;font-size:11px;color:#777}
+  .card .ops{border-top:1px solid #ddd;display:flex;gap:10px;padding:6px 10px;font-size:11px;color:#777}
+
+  .tabbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #000}
+  .tab-in{display:flex;justify-content:space-around;min-height:54px}
+  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;flex:1}
+  .tab[aria-current="true"]{font-weight:700}
+
+  main{padding-bottom:80px}
+  .view{display:none}
+  .view.on{display:block}
+
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:60}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;background:#fff;display:none;flex-direction:column;z-index:61;border-top:1px solid #000}
+  .mask.on,.sheet.on{display:flex}
+  .sheet-hd{padding:12px 20px;border-bottom:1px solid #ddd;font-weight:700}
+  .sheet-bd{overflow:auto;padding:14px 20px}
+  .sheet-ft{padding:12px 20px;border-top:1px solid #ddd}
+  .empty{padding:28px 0;color:#888;font-size:13px}
+  .toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-12px);background:#111;color:#fff;
+    font-size:12.5px;padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:.22s;z-index:80;max-width:86vw}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<header id="hd">
+  <div class="wrap hd-in">
+    <div class="brand"><b>校园π</b><em>信息聚合</em></div>
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="q" type="search" placeholder="搜课程、二手书、搭子…" autocomplete="off" aria-label="搜索校园信息">
+    </label>
+    <button class="authchip" id="authBtn" type="button"><span id="authTxt">未认证</span></button>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="wrap">
+    <div class="strip-track" id="strip" role="tablist" aria-label="分类"></div>
+  </div>
+</div>
+
+<main>
+  <!-- 首页 -->
+  <section class="view on" id="v-home">
+    <div class="wrap">
+      <div class="hero" id="hero" aria-label="头条轮播">
+        <div id="heroSlides"></div>
+        <div class="dots" id="heroDots"></div>
+      </div>
+      <div class="listhead"><h2 id="listTitle">最新信息</h2><span id="listCount">0 条</span></div>
+      <div class="cards" id="cards"></div>
+    </div>
+  </section>
+
+  <!-- 我的接单 -->
+  <section class="view" id="v-orders">
+    <div class="wrap">
+      <div class="listhead"><h2>我的接单</h2><span id="orderCount">0 条</span></div>
+      <div id="orderList"></div>
+    </div>
+  </section>
+
+  <!-- 防骗中心 -->
+  <section class="view" id="v-safety">
+    <div class="wrap"><div id="safetyBox"></div></div>
+  </section>
+
+  <!-- 我的 -->
+  <section class="view" id="v-mine">
+    <div class="wrap"><div id="mineBox"></div></div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <div class="wrap tab-in" id="tabbar">
+    <button class="tab" data-tab="home" aria-current="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9.5 20v-5h5v5"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="tab" data-tab="orders" aria-current="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16v13H4z"/><path d="M8 7V4.5h8V7"/><path d="M4 12h16"/></svg>
+      <span>接单</span>
+    </button>
+    <button class="tab" data-tab="safety" aria-current="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3.5 19 6v6c0 4-3 6.8-7 8.5C8 18.8 5 16 5 12V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+      <span>防骗</span>
+    </button>
+    <button class="tab" data-tab="mine" aria-current="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.3-3.6 4-5.5 7.5-5.5s6.2 1.9 7.5 5.5"/></svg>
+      <span>我的</span>
+    </button>
+  </div>
+</nav>
+
+<div class="mask" id="mask"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-hd" id="sheetHd"><span id="sheetTitle">详情</span>
+    <button type="button" id="sheetClose" aria-label="关闭" style="float:right">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-bd" id="sheetBd"></div>
+  <div class="sheet-ft" id="sheetFt"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============ 数据层 ============ */
+const KEY = 'pi.v4';
+const TERMS = '使用即表示同意：所有内容由用户自发发布，平台不介入交易；认证仅为格式校验（演示版）。';
+
+const load = (k, d) => { try { const v = localStorage.getItem(KEY + '.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const save = (k, v) => localStorage.setItem(KEY + '.' + k, JSON.stringify(v));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const CATS = ['全部', '二手书', '竞赛', '课程', '闲置', '搭子', '求助'];
+
+/* 分类 → 配图（发布新内容时按分类自动取图） */
+const PHOTO = { '二手书': 'img/p1.jpg', '竞赛': 'img/p2.jpg', '课程': 'img/p3.jpg', '闲置': 'img/p5.jpg', '搭子': 'img/p6.jpg', '求助': 'img/p7.jpg' };
+const imgFor = cat => PHOTO[cat] || 'img/p4.jpg';
+
+function seedPosts() {
+  return [
+    { id: 'p1', cat: '二手书', title: '《数据结构》严蔚敏 第二版 九成新', txt: '只在第三章划了几处重点，配套习题册一起给。图书馆南门面交，可以先翻再决定，不着急。', price: 18, place: '图书馆南门', au: '林', verified: true, time: '12 分钟前', likes: 12, cm: [{ by: '周', txt: '习题册也是这一版的吗？', at: '8 分钟前' }], img: 'img/p1.jpg', by: '林知远' },
+    { id: 'p2', cat: '竞赛', title: '数模国赛找一名会写作的队友', txt: '我们两个负责建模和代码，缺一个能把论文写顺的人。九月上旬开始集训，晚上七点后在线。', price: 0, place: '线上 + 本部三食堂', au: '陈', verified: true, time: '35 分钟前', likes: 26, cm: [{ by: '吴', txt: '去年拿过省二，可以聊一下吗', at: '20 分钟前' }, { by: '陈', txt: '可以，评论区留个暗号我加你', at: '16 分钟前' }], img: 'img/p2.jpg', by: '陈聿' },
+    { id: 'p3', cat: '课程', title: '高数 A 上 期末整理（手写扫描 42 页）', txt: '按老师给的重点顺序排的，例题都带步骤。免费给，只求对你有用；拿到后别二次倒卖就行。', price: 0, place: '线上共享', au: '许', verified: false, time: '1 小时前', likes: 88, cm: [], img: 'img/p3.jpg', by: '许一' },
+    { id: 'p4', cat: '二手书', title: '考研英语真题 2010–2024 全套', txt: '书脊有点压痕，内页干净无笔记。整套出，不拆卖；本部三食堂门口自取。', price: 45, place: '本部三食堂', au: '赵', verified: true, time: '2 小时前', likes: 7, cm: [{ by: '钱', txt: '能不能只买近五年的？', at: '1 小时前' }], img: 'img/p4.jpg', by: '赵岑' },
+    { id: 'p5', cat: '闲置', title: '小冰箱 50L 出一个（毕业清宿舍）', txt: '用了一年半，制冷正常，声音不大。五号楼自提，需要自己搬，我一个人抬不动。', price: 120, place: '5 号楼 3 层', au: '孙', verified: true, time: '3 小时前', likes: 31, cm: [], img: 'img/p5.jpg', by: '孙黎' },
+    { id: 'p6', cat: '搭子', title: '找每周三次的夜跑搭子（操场 8 点）', txt: '配速六分半，跑五公里，跑完各回各的。不聊天也行，有人一起就不容易放弃。', price: 0, place: '东区操场', au: '何', verified: false, time: '5 小时前', likes: 19, cm: [{ by: '郑', txt: '同配速，明天开始？', at: '4 小时前' }], img: 'img/p6.jpg', by: '何望' },
+    { id: 'p7', cat: '求助', title: '有人能帮我看一眼这段爬虫为什么报 403 吗', txt: '请求头都按浏览器抄的，还是被拦。附了截图和代码，请喝奶茶。可以线上，也可以约在机房。', price: 0, place: '线上 / 机房 302', au: '钱', verified: false, time: '7 小时前', likes: 5, cm: [], img: 'img/p7.jpg', by: '钱屿' },
+    { id: 'p8', cat: '课程', title: '通识课《电影史》旁听笔记交换', txt: '我整理了十周的片单和导演脉络，想换一份《社会学概论》的笔记。纯交换，不涉及费用。', price: 0, place: '线上', au: '冯', verified: true, time: '昨天', likes: 14, cm: [], img: 'img/p8.jpg', by: '冯亭' }
+  ];
+}
+
+const State = {
+  posts: load('posts', null) || seedPosts(),
+  orders: load('orders', []),
+  me: load('me', { name: '', sid: '', card4: '', verified: false }),
+  reports: load('reports', []),
+  cat: '全部',
+  q: '',
+  tab: 'home'
+};
+if (!load('posts', null)) save('posts', State.posts);
+
+const persist = () => save('posts', State.posts);
+
+/* ============ 小工具 ============ */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const money = p => (p ? '¥' + p : '免费');
+let toastT;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+/* ============ 渲染：分类条 ============ */
+function renderStrip() {
+  $('#strip').innerHTML = CATS.map(c =>
+    `<button class="chip" role="tab" data-cat="${esc(c)}" aria-selected="${c === State.cat}">${esc(c)}</button>`
+  ).join('');
+  $$('#strip .chip').forEach(b => b.onclick = () => {
+    State.cat = b.dataset.cat;
+    renderStrip(); renderList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/* ============ 渲染：头条轮播 ============ */
+const FEATURED = () => State.posts.filter(p => p.verified).slice(0, 4);
+let heroIdx = 0, heroTimer = null;
+
+function renderHero() {
+  const list = FEATURED();
+  if (!list.length) { $('#hero').style.display = 'none'; return; }
+  $('#heroSlides').innerHTML = list.map((p, i) => `
+    <div class="hero-slide ${i === 0 ? 'on' : ''}" data-i="${i}">
+      <img src="${esc(p.img || imgFor(p.cat))}" alt="${esc(p.title)}" width="1200" height="750">
+      <div class="hero-cap"><b>${esc(p.title)}</b><span>${esc(p.cat)} · ${esc(p.place)} · ${esc(p.time)}</span></div>
+    </div>`).join('');
+  $('#heroDots').innerHTML = list.map((_, i) => `<button class="dot ${i === 0 ? 'on' : ''}" data-d="${i}" aria-label="第 ${i + 1} 条"></button>`).join('');
+  $$('#heroDots .dot').forEach(d => d.onclick = () => go(Number(d.dataset.d)));
+  heroIdx = 0;
+  bindHeroTimer();
+}
+function go(i) {
+  const slides = $$('#heroSlides .hero-slide'), dots = $$('#heroDots .dot');
+  if (!slides.length) return;
+  heroIdx = (i + slides.length) % slides.length;
+  slides.forEach((s, k) => s.classList.toggle('on', k === heroIdx));
+  dots.forEach((d, k) => d.classList.toggle('on', k === heroIdx));
+}
+function bindHeroTimer() {
+  clearInterval(heroTimer);
+  heroTimer = setInterval(() => {
+    if (document.hidden || heroHover) return;
+    go(heroIdx + 1);
+  }, 6500);
+}
+let heroHover = false;
+$('#hero').addEventListener('mouseenter', () => heroHover = true);
+$('#hero').addEventListener('mouseleave', () => heroHover = false);
+document.addEventListener('visibilitychange', () => { /* 隐藏时定时器里 return，不推进 */ });
+
+/* ============ 渲染：列表 ============ */
+function filtered() {
+  const q = State.q.trim().toLowerCase();
+  return State.posts.filter(p =>
+    (State.cat === '全部' || p.cat === State.cat) &&
+    (!q || (p.title + p.txt + p.place + p.by + p.cat).toLowerCase().includes(q))
+  );
+}
+
+function postCard(p) {
+  return `<article class="card" data-id="${esc(p.id)}">
+    <img class="thumb" src="${esc(p.img || imgFor(p.cat))}" alt="${esc(p.title)}" loading="lazy" width="1200" height="750">
+    <div class="body">
+      <h3>${esc(p.title)}</h3>
+      <p>${esc(p.txt)}</p>
+      <div class="author">${esc(p.by)} · ${esc(p.place)} · <span class="price">${esc(money(p.price))}</span></div>
+    </div>
+    <div class="ops">
+      <button type="button" data-act="like">赞 <span class="likes">${p.likes}</span></button>
+      <button type="button" data-act="cm">留言 <span class="cmn">${(p.cm || []).length}</span></button>
+      <button type="button" data-act="open">详情</button>
+    </div>
+  </article>`;
+}
+
+function renderList() {
+  const list = filtered();
+  $('#cards').innerHTML = list.map(postCard).join('');
+  $('#listCount').textContent = list.length + ' 条';
+  $('#listTitle').textContent = State.cat === '全部' ? '最新信息' : State.cat;
+  if (!list.length) $('#cards').innerHTML = '<div class="empty">这个分类还没有内容。点右下角发一条试试。</div>';
+  $$('#cards .card').forEach(c => {
+    c.onclick = e => {
+      const act = e.target.closest('[data-act]');
+      const p = State.posts.find(x => x.id === c.dataset.id);
+      if (act && act.dataset.act === 'like') { p.likes += 1; persist(); act.querySelector('.likes').textContent = p.likes; return; }
+      openDetail(p.id);
+    };
+  });
+}
+
+/* ============ 详情弹层（骨架期：只展示字段） ============ */
+function openSheet(title, body, foot) {
+  $('#sheetTitle').textContent = title;
+  $('#sheetBd').innerHTML = body;
+  $('#sheetFt').innerHTML = foot || '';
+  $('#sheet').classList.add('on'); $('#mask').classList.add('on');
+}
+function closeSheet() {
+  $('#sheet').classList.remove('on'); $('#mask').classList.remove('on');
+}
+$('#sheetClose').onclick = closeSheet;
+$('#mask').onclick = closeSheet;
+
+function openDetail(id) {
+  const p = State.posts.find(x => x.id === id);
+  if (!p) return;
+  openSheet('详情', `
+    <img src="${esc(p.img || imgFor(p.cat))}" alt="${esc(p.title)}" width="1200" height="750">
+    <h2 style="font-size:16px;margin:12px 0 6px">${esc(p.title)}</h2>
+    <p style="color:#555;font-size:13px">${esc(p.txt)}</p>
+    <p style="font-size:12px;color:#888">${esc(p.by)} · ${esc(p.place)} · ${esc(money(p.price))} · ${esc(p.time)} · 赞 ${p.likes} · 留言 ${(p.cm || []).length}</p>
+  `, `<button type="button" id="takeBtn" style="width:100%;border:1px solid #000;padding:10px">接单</button>`);
+  $('#takeBtn').onclick = () => toast('接单功能在第 4 步接上');
+}
+
+/* ============ 视图切换 ============ */
+function renderOrders() {
+  const box = $('#orderList');
+  $('#orderCount').textContent = State.orders.length + ' 条';
+  box.innerHTML = State.orders.length ? State.orders.map(o => `
+    <div class="card" style="margin-bottom:12px;padding:12px">
+      <b>${esc(o.title)}</b>
+      <div style="font-size:12px;color:#777">面交码 ${esc(o.code)} · ${esc(o.place)} · ${esc(o.at)}</div>
+    </div>`).join('') : '<div class="empty">还没有接单。去首页点一条信息，面交码会出现在这里。</div>';
+}
+function renderSafety() {
+  $('#safetyBox').innerHTML = `
+    <div class="listhead"><h2>防骗中心</h2><span>校园版</span></div>
+    <p style="font-size:13px;color:#555">三条底线：不预付、不扫码给陌生人、不脱离平台私下转账。线下见面选人多的地方，白天优先。</p>
+    <p style="font-size:13px;color:#555">发布内容里出现「预付」「定金」「转账」这类词会被拦下；如果你是在提醒别人不要这么做，写成「不用预付」这类否定句就不会被误伤。</p>
+    <p style="font-size:12px;color:#888">${esc(TERMS)}</p>`;
+}
+function renderMine() {
+  const me = State.me;
+  $('#mineBox').innerHTML = `
+    <div class="listhead"><h2>我的</h2><span>${me.verified ? '已认证' : '未认证'}</span></div>
+    <div class="card" style="padding:12px">
+      <div style="font-size:13px">${me.verified ? esc(me.name) + ' · 学号 ' + esc(me.sid.slice(0, 2)) + '****' + esc(me.sid.slice(-2)) : '还没有在校生认证'}</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">${me.verified ? '认证仅为格式校验（演示版），不代表真实身份核验。' : '认证后才能接单。只做格式校验，演示版。'}</div>
+    </div>
+    <div class="listhead"><h2>我的发布</h2><span>${State.posts.filter(p => p.by === '我').length} 条</span></div>
+    <div id="myPosts"></div>
+    <p style="font-size:11px;color:#999">数据只存在这台设备的浏览器里（localStorage），换设备或清缓存就没了。配图来自 CC0/CC-BY 图库，出处见 img/credit.json。</p>`;
+  const mine = State.posts.filter(p => p.by === '我');
+  $('#myPosts').innerHTML = mine.length ? mine.map(p => `<div class="card" style="padding:10px;margin-bottom:8px"><b>${esc(p.title)}</b><div style="font-size:12px;color:#888">${esc(p.cat)} · ${esc(money(p.price))} · 赞 ${p.likes}</div></div>`).join('') : '<div class="empty">还没有发布过内容。</div>';
+}
+
+function setTab(tab) {
+  State.tab = tab;
+  $$('.tab').forEach(b => b.setAttribute('aria-current', String(b.dataset.tab === tab)));
+  $$('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + tab));
+  if (tab === 'orders') renderOrders();
+  if (tab === 'safety') renderSafety();
+  if (tab === 'mine') renderMine();
+  window.scrollTo({ top: 0 });
+}
+$$('.tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+/* ============ 搜索 ============ */
+let qT;
+$('#q').addEventListener('input', e => {
+  clearTimeout(qT);
+  qT = setTimeout(() => { State.q = e.target.value; renderList(); }, 120);
+});
+
+/* ============ 启动 ============ */
+function boot() {
+  renderStrip();
+  renderHero();
+  renderList();
+  const me = State.me;
+  $('#authTxt').textContent = me.verified ? '已认证' : '未认证';
+  window.__pi = State; // 便于验收脚本取值
+}
+boot();
+</script>
+</body>
+</html>
