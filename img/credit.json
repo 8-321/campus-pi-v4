@@ -1,0 +1,69 @@
+{
+ "note": "校园π 演示站配图。全部来自 Wikimedia Commons 的 CC0 / 公有领域 / CC BY / CC BY-SA 素材，已统一中心裁切为 1200×750。",
+ "images": {
+  "p1": {
+   "title": "Books @ Second-hand bookshop @ Paris (29269764234)",
+   "creator": "Guilhem Vellut from Paris, France",
+   "license": "CC BY 2.0",
+   "license_url": "https://creativecommons.org/licenses/by/2.0",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Books_@_Second-hand_bookshop_@_Paris_(29269764234).jpg"
+  },
+  "p2": {
+   "title": "Homework (8120708019)",
+   "creator": "Tony Alter from Newport News, USA",
+   "license": "CC BY 2.0",
+   "license_url": "https://creativecommons.org/licenses/by/2.0",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Homework_(8120708019).jpg"
+  },
+  "p3": {
+   "title": "Pen-writing-notes-studying",
+   "creator": "Tookapic",
+   "license": "CC0",
+   "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Pen-writing-notes-studying.jpg"
+  },
+  "p4": {
+   "title": "Library Reading Room, Minnesota History Center",
+   "creator": "Heritage Preservation Department - MNHS",
+   "license": "CC BY 2.0",
+   "license_url": "https://creativecommons.org/licenses/by/2.0",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Library_Reading_Room,_Minnesota_History_Center.jpg"
+  },
+  "p5": {
+   "title": "Gfp-fridge-contents",
+   "creator": "Yinan Chen",
+   "license": "Public Domain",
+   "license_url": "https://web.archive.org/web/20230926203737/https://creativecommons.org/licenses/publicdomain/",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Gfp-fridge-contents.jpg"
+  },
+  "p6": {
+   "title": "Baze.university campus grounds 41",
+   "creator": "Habila Sani Mazawaje (Stuffedbox)",
+   "license": "CC BY-SA 4.0",
+   "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Baze.university_campus_grounds_41.jpg"
+  },
+  "p7": {
+   "title": "Tidal Code Screenshot",
+   "creator": "Kindohm",
+   "license": "CC BY-SA 4.0",
+   "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Tidal_Code_Screenshot.png"
+  },
+  "p8": {
+   "title": "Defense.gov photo essay 091118-D-7203C-008",
+   "creator": "Cherie Cullen",
+   "license": "Public domain",
+   "license_url": "",
+   "source": "Wikimedia Commons",
+   "page": "https://commons.wikimedia.org/wiki/File:Defense.gov_photo_essay_091118-D-7203C-008.jpg"
+  }
+ }
+}
